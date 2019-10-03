@@ -88,7 +88,7 @@ final class Uri implements UriInterface {
 
         foreach($parts as $name => $value)
         {
-            $parts[$name] = urldecode($value);
+            $parts[$name] = urldecode((string) $value);
         }
 
         return $parts;
