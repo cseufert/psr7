@@ -45,10 +45,9 @@ final class Uri implements UriInterface {
 
     public function __construct(string $uri = '') {
         if('' !== $uri) {
-            if(false === $parts = self::mb_parse_url($uri)) {
+            if(false === $parts = \parse_url($uri)) {
                 throw new \InvalidArgumentException("Unable to parse URI: $uri");
             }
-
             // Apply parse_url parts to a URI.
             $this->scheme = isset($parts['scheme']) ? \strtolower($parts['scheme']) : '';
             $this->userInfo = $parts['user'] ?? '';
@@ -61,37 +60,6 @@ final class Uri implements UriInterface {
                 $this->userInfo .= ':' . $parts['pass'];
             }
         }
-    }
-
-    /**
-     * UTF-8 aware parse_url() replacement.
-     * @see https://www.php.net/manual/de/function.parse-url.php#114817
-     * @return array
-     */
-    public static function mb_parse_url($url)
-    {
-        $enc_url = preg_replace_callback(
-            '%[^:/@?&=#]+%usD',
-            function ($matches)
-            {
-                return urlencode($matches[0]);
-            },
-            $url
-        );
-
-        $parts = parse_url($enc_url);
-
-        if($parts === false)
-        {
-            throw new \InvalidArgumentException('Malformed URL: ' . $url);
-        }
-
-        foreach($parts as $name => $value)
-        {
-            $parts[$name] = urldecode((string) $value);
-        }
-
-        return $parts;
     }
 
     public function __toString(): string
