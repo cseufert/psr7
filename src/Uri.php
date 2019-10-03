@@ -15,8 +15,7 @@ use Psr\Http\Message\UriInterface;
  * @author Tobias Nyholm <tobias.nyholm@gmail.com>
  * @author Martijn van der Ven <martijn@vanderven.se>
  */
-final class Uri implements UriInterface
-{
+final class Uri implements UriInterface {
     private const SCHEMES = ['http' => 80, 'https' => 443];
 
     private const CHAR_UNRESERVED = 'a-zA-Z0-9_\-\.~';
@@ -44,10 +43,9 @@ final class Uri implements UriInterface
     /** @var string Uri fragment. */
     private $fragment = '';
 
-    public function __construct(string $uri = '')
-    {
-        if ('' !== $uri) {
-            if (false === $parts = self::parse_utf8_url($uri)) {
+    public function __construct(string $uri = '') {
+        if('' !== $uri) {
+            if(false === $parts = self::mb_parse_url($uri)) {
                 throw new \InvalidArgumentException("Unable to parse URI: $uri");
             }
 
@@ -59,25 +57,43 @@ final class Uri implements UriInterface
             $this->path = isset($parts['path']) ? $this->filterPath($parts['path']) : '';
             $this->query = isset($parts['query']) ? $this->filterQueryAndFragment($parts['query']) : '';
             $this->fragment = isset($parts['fragment']) ? $this->filterQueryAndFragment($parts['fragment']) : '';
-            if (isset($parts['pass'])) {
+            if(isset($parts['pass'])) {
                 $this->userInfo .= ':' . $parts['pass'];
             }
         }
     }
-    
-    static function parse_utf8_url($url) {
-        static $keys = ['scheme' => 0, 'user' => 0, 'pass' => 0, 'host' => 0, 'port' => 0, 'path' => 0, 'query' => 0, 'fragment' => 0];
-        if(is_string($url) && preg_match(
-            '~^((?P<scheme>[^:/?#]+):(//))?((\\3|//)?(?:(?P<user>[^/:]+):(?P<pass>[^/@]+)@)?(?P<host>[^/?:#]*))(:(?P<port>\\d+))?' .
-            '(?P<path>[^?#]*)(\\?(?P<query>[^#]*))?(#(?P<fragment>.*))?~u', $url, $matches)) {
-            foreach($matches as $key => $value)
-            if(!isset($keys[$key]) || strlen($value) === 0)
-                unset($matches[$key]);
-            return $matches;
+
+    /**
+     * UTF-8 aware parse_url() replacement.
+     * @see https://www.php.net/manual/de/function.parse-url.php#114817
+     * @return array
+     */
+    public static function mb_parse_url($url)
+    {
+        $enc_url = preg_replace_callback(
+            '%[^:/@?&=#]+%usD',
+            function ($matches)
+            {
+                return urlencode($matches[0]);
+            },
+            $url
+        );
+
+        $parts = parse_url($enc_url);
+
+        if($parts === false)
+        {
+            throw new \InvalidArgumentException('Malformed URL: ' . $url);
         }
-        return false;
+
+        foreach($parts as $name => $value)
+        {
+            $parts[$name] = urldecode($value);
+        }
+
+        return $parts;
     }
-    
+
     public function __toString(): string
     {
         return self::createUriString($this->scheme, $this->getAuthority(), $this->path, $this->query, $this->fragment);
