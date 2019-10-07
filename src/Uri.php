@@ -51,7 +51,7 @@ final class Uri implements UriInterface {
             // Apply parse_url parts to a URI.
             $this->scheme = isset($parts['scheme']) ? \strtolower($parts['scheme']) : '';
             $this->userInfo = $parts['user'] ?? '';
-            $this->host = isset($parts['host']) ? \strtolower($parts['host']) : '';
+            $this->host = isset($parts['host']) ? $this->filterHost($parts['host']) : '';
             $this->port = isset($parts['port']) ? $this->filterPort($parts['port']) : null;
             $this->path = isset($parts['path']) ? $this->filterPath($parts['path']) : '';
             $this->query = isset($parts['query']) ? $this->filterQueryAndFragment($parts['query']) : '';
@@ -160,7 +160,7 @@ final class Uri implements UriInterface {
             throw new \InvalidArgumentException('Host must be a string');
         }
 
-        if ($this->host === $host = \strtolower($host)) {
+        if ($this->host === $host = $this->filterHost($host)) {
             return $this;
         }
 
@@ -266,6 +266,17 @@ final class Uri implements UriInterface {
     private static function isNonStandardPort(string $scheme, int $port): bool
     {
         return !isset(self::SCHEMES[$scheme]) || $port !== self::SCHEMES[$scheme];
+    }
+
+    private function filterHost($host): string
+    {
+        return \preg_replace_callback(
+            '/([A-Z])/',
+            static function($cap) {
+                return strtolower($cap[0]);
+            },
+            $host
+        );
     }
 
     private function filterPort($port): ?int

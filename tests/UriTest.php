@@ -471,24 +471,13 @@ class UriTest extends TestCase
         $this->assertNotSame($uri, $uri->withQuery('q=abc'));
         $this->assertNotSame($uri, $uri->withFragment('test'));
     }
-    
-    /**
-    * @dataProvider utf8PathsDataProvider
-    */
-    public function testUtf8Path($url, $result)
+
+    public function testUtf8Host()
     {
-        $uri = new Uri($url);
-        
-        $this->assertSame($result, $uri->getPath());
+        $uri = new Uri('http://ουτοπία.δπθ.gr/');
+        $this->assertSame('ουτοπία.δπθ.gr', $uri->getHost());
+        $new = $uri->withHost('程式设计.com');
+        $this->assertSame('程式设计.com', $new->getHost());
     }
 
-    public function utf8PathsDataProvider()
-    {
-        return [
-            ['http://example.com/тестовый_путь/', '/тестовый_путь/'],
-            ['http://example.com/ουτοπία/', '/ουτοπία/']
-        ];
-    }
-
-    
 }
